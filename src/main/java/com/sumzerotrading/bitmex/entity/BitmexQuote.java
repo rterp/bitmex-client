@@ -6,17 +6,13 @@
 package com.sumzerotrading.bitmex.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import com.sumzerotrading.bitmex.client.ZonedDateTimeDeserializer;
-import java.time.ZonedDateTime;
-import java.util.Objects;
 
 /**
  *
  * @author RobTerpilowski
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BitmexQuoteData {
+public class BitmexQuote {
     
     protected String symbol;
     protected double bidPrice;

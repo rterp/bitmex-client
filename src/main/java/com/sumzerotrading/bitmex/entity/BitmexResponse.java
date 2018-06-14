@@ -5,7 +5,7 @@
  */
 package com.sumzerotrading.bitmex.entity;
 
-import com.sumzerotrading.bitmex.entity.BitmexQuoteData;
+import com.sumzerotrading.bitmex.entity.BitmexQuote;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.Arrays;
 import java.util.Objects;
@@ -17,16 +17,16 @@ import java.util.Objects;
  *
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class BitmexOrderResponse {
+public class BitmexResponse<T> {
 
-    protected BitmexOrder[] data;
+    protected T[] data;
     protected String table;
 
-    public BitmexOrder[] getData() {
+    public T[] getData() {
         return data;
     }
 
-    public void setData(BitmexOrder[] data) {
+    public void setData(T[] data) {
         this.data = data;
     }
 
@@ -57,7 +57,7 @@ public class BitmexOrderResponse {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        final BitmexOrderResponse other = (BitmexOrderResponse) obj;
+        final BitmexResponse other = (BitmexResponse) obj;
         if (!Objects.equals(this.table, other.table)) {
             return false;
         }

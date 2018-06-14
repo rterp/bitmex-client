@@ -5,23 +5,26 @@
  */
 package com.sumzerotrading.bitmex.client;
 
+import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import com.sumzerotrading.bitmex.entity.BitmexOrder;
-import com.sumzerotrading.bitmex.entity.BitmexOrderResponse;
 import com.sumzerotrading.bitmex.entity.BitmexPosition;
-import com.sumzerotrading.bitmex.entity.BitmexPositionResponse;
-import com.sumzerotrading.bitmex.entity.BitmexQuoteData;
-import com.sumzerotrading.bitmex.entity.BitmexQuoteResponse;
+import com.sumzerotrading.bitmex.entity.BitmexQuote;
+import com.sumzerotrading.bitmex.entity.BitmexResponse;
+import com.sumzerotrading.bitmex.entity.BitmexTrade;
 import com.sumzerotrading.bitmex.listener.IOrderListener;
 import com.sumzerotrading.bitmex.listener.IPositionListener;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.log4j.Logger;
 import com.sumzerotrading.bitmex.listener.IQuoteListener;
+import com.sumzerotrading.bitmex.listener.ITradeListener;
+import java.lang.reflect.Type;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.logging.Level;
 
 /**
  *
@@ -34,10 +37,11 @@ public class WebsocketMessageProcessor implements Runnable, IMessageProcessor {
     protected volatile boolean shouldRun = false;
     protected Gson gson = new Gson();
     protected JsonParser parser = new JsonParser();
-    
-    protected List<IQuoteListener> quoteListeners = new ArrayList<>();
-    protected List<IPositionListener> positionListeners = new ArrayList<>();
-    protected List<IOrderListener> orderListeners = new ArrayList<>();
+
+    protected Set<IQuoteListener> quoteListeners = new HashSet<>();
+    protected Set<IPositionListener> positionListeners = new HashSet<>();
+    protected Set<IOrderListener> orderListeners = new HashSet<>();
+    protected Set<ITradeListener> tradeListeners = new HashSet<>();
 
     @Override
     public void startProcessor() {
@@ -55,115 +59,152 @@ public class WebsocketMessageProcessor implements Runnable, IMessageProcessor {
     public void processMessage(String message) {
         messageQueue.add(message);
     }
-    
+
     @Override
-    public void addQuoteListener( IQuoteListener listener ) {
+    public void addQuoteListener(IQuoteListener listener) {
         quoteListeners.add(listener);
     }
-    
+
     @Override
-    public void addPositionListener( IPositionListener listener ) {
+    public void addPositionListener(IPositionListener listener) {
         positionListeners.add(listener);
     }
-    
+
     @Override
-    public void addorderListener( IOrderListener listener ) {
+    public void addOrderListener(IOrderListener listener) {
         orderListeners.add(listener);
     }
 
     @Override
-    public void run() {
-        String message = "";
-        while (shouldRun) {
-            try {
-                message = messageQueue.take();
-                logger.debug("Processor got message: " + message );
-                JsonElement element = parser.parse(message);
-                if (element.isJsonObject()) {
-                    JsonElement table = element.getAsJsonObject().get("table");
+    public void addTradeListener(ITradeListener listener) {
+        tradeListeners.add(listener);
+    }
 
-                    if (table != null) {
-                        String tableString = table.getAsString();
-                        if (tableString.equals("quote")) {
-                            processQuote(message);
-                        } else if( tableString.equals("position") ) {
-                            processPosition(message);
-                        } else if( tableString.equals( "order" ) ) { 
-                            processOrder(message);
-                        }
-                    }
-                }
-            } catch (JsonSyntaxException ex ) {
-                logger.error(ex.getMessage(), ex);
-                logger.error("error parsing: " + message);
-            } catch (Exception ex) {
-                logger.error(ex.getMessage(), ex);
+    @Override
+    public void run() {
+        while (shouldRun) {
+            processNextMessage();
+            try {
+                Thread.sleep(100);
+            } catch (InterruptedException ex) {
             }
         }
     }
-    
-    
+
+    protected void processNextMessage() {
+        String message = "";
+        try {
+            message = messageQueue.take();
+            logger.debug("Processor got message: " + message);
+            JsonElement element = parser.parse(message);
+            if (element.isJsonObject()) {
+                JsonElement table = element.getAsJsonObject().get("table");
+
+                if (table != null) {
+                    String tableString = table.getAsString();
+                    if (tableString.equals("quote")) {
+                        processQuote(message);
+                    } else if (tableString.equals("position")) {
+                        processPosition(message);
+                    } else if (tableString.equals("order")) {
+                        processOrder(message);
+                    } else if (tableString.equals("trade")) {
+                        processTrade(message);
+                    }
+                }
+            }
+        } catch (JsonSyntaxException ex) {
+            logger.error(ex.getMessage(), ex);
+            logger.error("error parsing: " + message);
+        }    catch (Exception ex) {
+            logger.error(ex.getMessage(), ex);
+        }
+    }
+
     protected void processQuote(String message) {
-        BitmexQuoteResponse response = gson.fromJson(message, BitmexQuoteResponse.class);
-        logger.debug("Parsed response: " + response );
-        fireQuoteMessage(response);
+        BitmexResponse<BitmexQuote> quote = parseMessage(message, new TypeToken<BitmexResponse<BitmexQuote>>(){});
+        logger.debug("Parsed response: " + quote);
+        fireQuoteMessage(quote);
     }
-    
-    protected void processPosition(String message) { 
-        BitmexPositionResponse response = gson.fromJson(message, BitmexPositionResponse.class);
-        logger.debug("Parsed response: " + response );
-        firePositionMessage(response);        
+
+    protected void processPosition(String message) {
+        BitmexResponse<BitmexPosition> position = parseMessage(message, new TypeToken<BitmexResponse<BitmexPosition>>(){});
+        logger.debug("Parsed response: " + position);
+        firePositionMessage(position);
     }
-    
-    protected void processOrder(String message) { 
-        BitmexOrderResponse response = gson.fromJson(message, BitmexOrderResponse.class);
-        logger.debug("Parsed response: " + response );
-        fireOrderMessage(response);        
-    }    
-    
-    
-    
-    protected void fireQuoteMessage( BitmexQuoteResponse response ) {
-        synchronized(quoteListeners) {
-            for( IQuoteListener listener : quoteListeners ) {
-                for( BitmexQuoteData data : response.getData() ) {
+
+    protected void processOrder(String message) {
+        BitmexResponse<BitmexOrder> order = parseMessage(message, new TypeToken<BitmexResponse<BitmexOrder>>(){});
+        logger.debug("Parsed response: " + order);
+        fireOrderMessage(order);
+    }
+
+    protected void processTrade(String message) {
+        BitmexResponse<BitmexTrade> trade = parseMessage(message, new TypeToken<BitmexResponse<BitmexTrade>>(){} );
+        logger.debug("Parsed response: " + trade);
+        fireTradeMessage(trade);
+    }
+
+    protected <T> BitmexResponse parseMessage(String message, TypeToken type) {
+        Type collectionType = type.getType();
+        BitmexResponse response = gson.fromJson(message, collectionType);
+        return response;
+    }
+
+    protected void fireQuoteMessage(BitmexResponse<BitmexQuote> response) {
+        synchronized (quoteListeners) {
+            for (IQuoteListener listener : quoteListeners) {
+                for (BitmexQuote data : response.getData()) {
                     try {
                         listener.quoteUpdated(data);
-                    } catch( Exception ex ) {
+                    } catch (Exception ex) {
                         logger.error(ex.getMessage(), ex);
                     }
                 }
             }
         }
     }
-    
-    protected void firePositionMessage( BitmexPositionResponse response ) {
-        synchronized(quoteListeners) {
-            for( IPositionListener listener : positionListeners ) {
-                for( BitmexPosition data : response.getData() ) {
+
+    protected void firePositionMessage(BitmexResponse<BitmexPosition> response) {
+        synchronized (quoteListeners) {
+            for (IPositionListener listener : positionListeners) {
+                for (BitmexPosition data : response.getData()) {
                     try {
                         listener.positionUpdated(data);
-                    } catch( Exception ex ) {
+                    } catch (Exception ex) {
                         logger.error(ex.getMessage(), ex);
                     }
                 }
             }
         }
-    }    
-    
-    protected void fireOrderMessage( BitmexOrderResponse response ) {
-        synchronized(quoteListeners) {
-            for( IOrderListener listener : orderListeners ) {
-                for( BitmexOrder data : response.getData() ) {
+    }
+
+    protected void fireOrderMessage(BitmexResponse<BitmexOrder> response) {
+        synchronized (quoteListeners) {
+            for (IOrderListener listener : orderListeners) {
+                for (BitmexOrder data : response.getData()) {
                     try {
                         listener.orderUpdated(data);
-                    } catch( Exception ex ) {
+                    } catch (Exception ex) {
                         logger.error(ex.getMessage(), ex);
                     }
                 }
             }
         }
-    }        
-    
-    
+    }
+
+    protected void fireTradeMessage(BitmexResponse<BitmexTrade> trade) {
+        synchronized (quoteListeners) {
+            for (ITradeListener listener : tradeListeners) {
+                for (BitmexTrade data : trade.getData()) {
+                    try {
+                        listener.tradeUpdated(data);
+                    } catch (Exception ex) {
+                        logger.error(ex.getMessage(), ex);
+                    }
+                }
+            }
+        }
+    }
+
 }

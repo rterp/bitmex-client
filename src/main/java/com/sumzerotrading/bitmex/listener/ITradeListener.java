@@ -5,14 +5,13 @@
  */
 package com.sumzerotrading.bitmex.listener;
 
-import com.sumzerotrading.bitmex.entity.BitmexQuote;
-import com.google.gson.JsonObject;
+import com.sumzerotrading.bitmex.entity.BitmexTrade;
 
 /**
  *
  * @author RobTerpilowski
  */
-public interface IQuoteListener {
+public interface ITradeListener {
     
-    public void quoteUpdated( BitmexQuote quoteData );
+    public void tradeUpdated(BitmexTrade trade);
 }

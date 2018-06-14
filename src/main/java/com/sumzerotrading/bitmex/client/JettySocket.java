@@ -5,9 +5,7 @@
  */
 package com.sumzerotrading.bitmex.client;
 
-import com.sumzerotrading.bitmex.entity.BitmexQuoteResponse;
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.sumzerotrading.data.SumZeroException;
 import java.util.concurrent.CountDownLatch;
@@ -19,7 +17,6 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketConnect;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
-import com.sumzerotrading.bitmex.listener.IQuoteListener;
 
 /**
  *
