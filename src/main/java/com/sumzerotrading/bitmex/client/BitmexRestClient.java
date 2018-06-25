@@ -36,7 +36,7 @@ import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJaxbJsonP
  *
  * @author RobTerpilowski
  */
-public class BitmexRestClient {
+public class BitmexRestClient implements IBitmexRestClient {
 
     public enum ChartDataBinSize {
         ONE_MINUTE("1m"),
@@ -93,6 +93,7 @@ public class BitmexRestClient {
         this.apiKey = apiKey;
     }
 
+    @Override
     public BitmexInstrument getInstrument(Ticker ticker) {
         WebTarget target = client.target(apiURL)
                 .path("instrument")
@@ -109,6 +110,7 @@ public class BitmexRestClient {
         return instruments[0];
     }
 
+    @Override
     public BitmexOrder submitOrder(BitmexOrder order) {
         Response response = submitRequestWithBody("order", order, Verb.POST);
         logger.info("Response code: " + response.getStatus());
@@ -119,24 +121,39 @@ public class BitmexRestClient {
         return response.readEntity(BitmexOrder.class);
     }
 
+    @Override
     public BitmexOrder cancelOrder(BitmexOrder order) {
         Response response = submitRequestWithBody("order", order, Verb.DELETE);
         logger.info("Response code: " + response.getStatus());
         return response.readEntity(BitmexOrder.class);
     }
 
+    @Override
     public BitmexOrder amendOrder(BitmexAmendOrder order) {
         Response response = submitRequestWithBody("order", order, Verb.PUT);
         logger.info("Response code: " + response.getStatus());
         return response.readEntity(BitmexOrder.class);
     }
 
+    @Override
     public List<BitmexChartData> getChartData(Ticker ticker, int count, ChartDataBinSize binSize) {
+        return getChartData(ticker, count, binSize, "");
+    }
+    
+    @Override
+    public List<BitmexChartData> getChartData(Ticker ticker, int count, ChartDataBinSize binSize, String endTime) {
+     return getChartData(ticker, count, binSize, "", false);
+    }
+
+    @Override
+    public List<BitmexChartData> getChartData(Ticker ticker, int count, ChartDataBinSize binSize, String endTime, boolean getInprogressBar) {
         WebTarget target = client.target(apiURL)
                 .path("trade/bucketed")
                 .queryParam("symbol", ticker.getSymbol())
                 .queryParam("count", count)
                 .queryParam("binSize", binSize.getBin())
+                .queryParam("endTime", endTime)
+                .queryParam("partial", getInprogressBar)
                 .queryParam("reverse", true);
         Invocation.Builder builder = target.request(MediaType.APPLICATION_JSON);
         addHeaders(builder, target.getUri());
@@ -150,8 +167,10 @@ public class BitmexRestClient {
         List<BitmexChartData> returnList = Arrays.asList(data);
         Collections.reverse(returnList);
 
-        return returnList;
+        return returnList;   
     }
+    
+    
 
     protected Response submitRequestWithBody(String path, Object object, Verb verb) {
         if (verb == Verb.GET) {

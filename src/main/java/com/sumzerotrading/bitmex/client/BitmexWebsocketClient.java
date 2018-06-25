@@ -29,7 +29,7 @@ import java.util.Set;
  *
  * @author RobTerpilowski
  */
-public class BitmexWebsocketClient implements IQuoteListener {
+public class BitmexWebsocketClient implements IBitmexWebsocketClient {
 
     protected String productionApiUrl = "wss://www.bitmex.com/realtime";
     protected String testnetApiUrl = "wss://testnet.bitmex.com/realtime";
@@ -66,10 +66,12 @@ public class BitmexWebsocketClient implements IQuoteListener {
         socket = new JettySocket(latch, messageProcessor);
     }
 
+    @Override
     public boolean connect() {
         return connect("", "");
     }
 
+    @Override
     public boolean connect(String apiKey, String apiSecret) {
         try {
             logger.info("Starting connection");
@@ -97,6 +99,7 @@ public class BitmexWebsocketClient implements IQuoteListener {
 
     }
     
+    @Override
     public void disconnect() {
         try {
             client.stop();
@@ -105,10 +108,12 @@ public class BitmexWebsocketClient implements IQuoteListener {
         }
     }
 
+    @Override
     public void subscribeExecutions() {
         socket.subscribe(buildSubscribeCommand("execution"));
     }
 
+    @Override
     public void subscribeOrders(IOrderListener listener) {
         messageProcessor.addOrderListener(listener);
         if( ! subscribedOrders ) {
@@ -116,6 +121,7 @@ public class BitmexWebsocketClient implements IQuoteListener {
         } 
     }
 
+    @Override
     public void subscribePositions(IPositionListener listener) {
         messageProcessor.addPositionListener(listener);
         if( ! subscribedPositions ) {
@@ -125,14 +131,17 @@ public class BitmexWebsocketClient implements IQuoteListener {
         
     }
 
+    @Override
     public void subscribeInstrument(Ticker ticker) {
         socket.subscribe(buildSubscribeCommand("instrument:" + ticker.getSymbol()));
     }
 
+    @Override
     public void subscribeFunding(Ticker ticker) {
         socket.subscribe(buildSubscribeCommand("funding:" + ticker.getSymbol()));
     }
 
+    @Override
     public void subscribeQuotes(Ticker ticker, IQuoteListener listener) {
         messageProcessor.addQuoteListener(listener);
         if( ! subscribedQuoteTickers.contains(ticker.getSymbol() ) ) {
@@ -142,10 +151,12 @@ public class BitmexWebsocketClient implements IQuoteListener {
         
     }
 
+    @Override
     public void subscribeOrderBook(Ticker ticker) {
         socket.subscribe(buildSubscribeCommand("orderBookL2:" + ticker.getSymbol()));
     }
 
+    @Override
     public void subscribeTrades(Ticker ticker, ITradeListener listener) {
         messageProcessor.addTradeListener(listener);
         if( ! subscribedTradeTickers.contains(ticker.getSymbol()) ) {
@@ -189,6 +200,7 @@ public class BitmexWebsocketClient implements IQuoteListener {
         return sb.toString();
     }
 
+    @Override
     public boolean isConnected() {
         return connected;
     }
@@ -197,6 +209,7 @@ public class BitmexWebsocketClient implements IQuoteListener {
     public void quoteUpdated(BitmexQuote quoteData) {
     }
 
+    @Override
     public String getApiSignature(String apiKey, long nonce) {
 
         String keyString = "GET" + "/realtime" + nonce;

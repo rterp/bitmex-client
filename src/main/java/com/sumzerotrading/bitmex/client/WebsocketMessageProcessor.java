@@ -46,7 +46,8 @@ public class WebsocketMessageProcessor implements Runnable, IMessageProcessor {
     @Override
     public void startProcessor() {
         shouldRun = true;
-        Thread thread = new Thread(this);
+        Thread thread = new Thread(this, "WebsocketMessageProcess");
+        thread.setDaemon(true);
         thread.start();
     }
 
