@@ -21,7 +21,7 @@ public class BitmexOrder {
     
     protected double orderQty;
     
-    protected double price;
+    protected double price = 0;
     
     //Valid options: Buy, Sell. 
     protected String side;

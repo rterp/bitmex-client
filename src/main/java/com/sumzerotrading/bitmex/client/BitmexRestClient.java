@@ -177,6 +177,7 @@ public class BitmexRestClient implements IBitmexRestClient {
             throw new SumZeroException("Can't call this method for a GET request");
         }
         String jsonObject = toJson(object);
+        logger.debug("Submitting object: " + jsonObject);
         WebTarget target = client.target(apiURL).path(path);
         Invocation.Builder builder = target.request(MediaType.APPLICATION_JSON);
         addHeaders(builder, target.getUri(), verb.toString(), jsonObject);
