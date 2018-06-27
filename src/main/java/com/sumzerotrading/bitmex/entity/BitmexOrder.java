@@ -21,7 +21,7 @@ public class BitmexOrder {
     
     protected double orderQty;
     
-    protected double price = 0;
+    protected Double price;
     
     //Valid options: Buy, Sell. 
     protected String side;
@@ -53,11 +53,11 @@ public class BitmexOrder {
         this.orderQty = orderQty;
     }
 
-    public double getPrice() {
+    public Double getPrice() {
         return price;
     }
 
-    public void setPrice(double price) {
+    public void setPrice(Double price) {
         this.price = price;
     }
 

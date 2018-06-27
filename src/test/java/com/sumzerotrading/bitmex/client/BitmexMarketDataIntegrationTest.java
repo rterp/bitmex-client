@@ -91,7 +91,7 @@ public class BitmexMarketDataIntegrationTest {
     }
 
     @Ignore
-    public void testSubmitOrder() throws Exception {
+    public void testSubmitLimitOrder() throws Exception {
         String apiKeyName = "";
         String apiKey = "";
         BitmexRestClient client = new BitmexRestClient(false, apiKeyName, apiKey);
@@ -112,6 +112,25 @@ public class BitmexMarketDataIntegrationTest {
         BitmexOrder newOrder = client.amendOrder(amend);
         System.out.println("New order: " + newOrder);
     }
+    
+    //@Ignore
+    @Test
+    public void testSubmitMarketOrder() throws Exception {
+        String apiKeyName = "";
+        String apiKey = "";
+        BitmexApiKey keyProp = BitmexApiKey.readApiKey("/Users/RobTerpilowski/Documents/BitmexTestnet.prop");
+        apiKeyName = keyProp.getApiKeyName();
+        apiKey = keyProp.getApiKey();
+        BitmexRestClient client = new BitmexRestClient(false, apiKeyName, apiKey);
+        BitmexOrder order = new BitmexOrder();
+        order.setSymbol("XBTUSD");
+        order.setOrderQty(1.0);
+        order.setOrdType("Market");
+
+        BitmexOrder result = client.submitOrder(order);
+        System.out.println("Order returned is: " + result);
+
+    }    
 
     @Test
     public void testGetChartData() {
