@@ -124,8 +124,11 @@ public class BitmexMarketDataIntegrationTest {
         BitmexRestClient client = new BitmexRestClient(false, apiKeyName, apiKey);
         BitmexOrder order = new BitmexOrder();
         order.setSymbol("XBTUSD");
+        order.setSide("Buy");
         order.setOrderQty(1.0);
-        order.setOrdType("Market");
+        order.setOrdType("Limit");
+        order.setExecInst("ParticipateDoNotInitiate");
+        order.setPrice(8000.0);
 
         BitmexOrder result = client.submitOrder(order);
         System.out.println("Order returned is: " + result);

@@ -115,8 +115,8 @@ public class BitmexRestClient implements IBitmexRestClient {
         Response response = submitRequestWithBody("order", order, Verb.POST);
         logger.info("Response code: " + response.getStatus());
         if (response.getStatus() == 503) {
-            IllegalStateException ex = new IllegalStateException("Response code 503 returned");
-            logger.error("503 response returned", ex);
+            logger.error("503 response returned");
+            throw new BitmexSystemOverloadedException(order);
         }
         return response.readEntity(BitmexOrder.class);
     }
