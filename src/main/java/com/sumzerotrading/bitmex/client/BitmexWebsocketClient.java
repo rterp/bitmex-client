@@ -7,6 +7,7 @@ package com.sumzerotrading.bitmex.client;
 
 import com.sumzerotrading.bitmex.entity.BitmexQuote;
 import com.google.common.base.Strings;
+import com.sumzerotrading.bitmex.listener.IExecutionListener;
 import com.sumzerotrading.bitmex.listener.IOrderListener;
 import com.sumzerotrading.bitmex.listener.IPositionListener;
 import com.sumzerotrading.data.SumZeroException;
@@ -22,24 +23,31 @@ import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import com.sumzerotrading.bitmex.listener.IQuoteListener;
 import com.sumzerotrading.bitmex.listener.ITradeListener;
+import com.sumzerotrading.bitmex.listener.WebsocketDisconnectListener;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.logging.Level;
 
 /**
  *
  * @author RobTerpilowski
  */
-public class BitmexWebsocketClient implements IBitmexWebsocketClient {
+public class BitmexWebsocketClient implements IBitmexWebsocketClient, WebsocketDisconnectListener {
 
     protected String productionApiUrl = "wss://www.bitmex.com/realtime";
     protected String testnetApiUrl = "wss://testnet.bitmex.com/realtime";
     protected String websocketUrl = "";
     protected CountDownLatch latch = new CountDownLatch(1);
-    protected String apiKey = "";
     protected Logger logger = Logger.getLogger(BitmexWebsocketClient.class);
     protected IMessageProcessor messageProcessor;
     protected Set<String> subscribedQuoteTickers = new HashSet<>();
     protected Set<String> subscribedTradeTickers = new HashSet<>();
+    protected String apiKey = "";
+    protected String apiSecret = "";
+    protected List<String> subscribeCommandList = new ArrayList<>();
+    protected boolean shouldReconnect = true;
 
     WebSocketClient client = new WebSocketClient();
     JettySocket socket;
@@ -48,15 +56,14 @@ public class BitmexWebsocketClient implements IBitmexWebsocketClient {
     protected boolean connected = false;
     protected boolean subscribedPositions = false;
     protected boolean subscribedOrders = false;
-    
-    
-    
+    protected boolean subscribedExecutions = false;
+
     //for unit tests
     protected BitmexWebsocketClient() {
     }
-    
+
     public BitmexWebsocketClient(boolean useProduction) {
-        if( useProduction ) {
+        if (useProduction) {
             websocketUrl = productionApiUrl;
         } else {
             websocketUrl = testnetApiUrl;
@@ -64,6 +71,7 @@ public class BitmexWebsocketClient implements IBitmexWebsocketClient {
         messageProcessor = new WebsocketMessageProcessor();
         messageProcessor.startProcessor();
         socket = new JettySocket(latch, messageProcessor);
+        
     }
 
     @Override
@@ -74,17 +82,19 @@ public class BitmexWebsocketClient implements IBitmexWebsocketClient {
     @Override
     public boolean connect(String apiKey, String apiSecret) {
         try {
+            this.apiKey = apiKey;
+            this.apiSecret = apiSecret;
             logger.info("Starting connection");
             client.start();
             URI echoUri = new URI(websocketUrl);
             ClientUpgradeRequest request = new ClientUpgradeRequest();
             client.connect(socket, echoUri, request);
-            
+
             logger.info("Connecting to : " + echoUri);
             latch.await(15, TimeUnit.SECONDS);
             isStarted = socket.isConnected();
-            connected = socket.isConnected();            
-            logger.info("Connected: " + connected );
+            connected = socket.isConnected();
+            logger.info("Connected: " + connected);
             if (!Strings.isNullOrEmpty(apiKey)) {
                 long nonce = System.currentTimeMillis();
                 String signature = getApiSignature(apiSecret, nonce);
@@ -96,12 +106,30 @@ public class BitmexWebsocketClient implements IBitmexWebsocketClient {
         } finally {
             return connected;
         }
-
     }
-    
+
+    @Override
+    public void socketDisconnectDetected() {
+        if (shouldReconnect) {
+            logger.error("Disconnect detected....reconnecting");
+            connect(apiKey, apiSecret);
+            for (String command : subscribeCommandList) {
+                logger.error("Resubmitting subscribe command: " + command);
+                socket.subscribe(command);
+                try {
+                    Thread.sleep(250);
+                } catch (InterruptedException ex) {
+                }
+            }
+        } else {
+            logger.info("Disconnect detected, will not reconnect");
+        }
+    }
+
     @Override
     public void disconnect() {
         try {
+            shouldReconnect = false;
             client.stop();
         } catch (Exception ex) {
             logger.error(ex.getMessage(), ex);
@@ -109,26 +137,31 @@ public class BitmexWebsocketClient implements IBitmexWebsocketClient {
     }
 
     @Override
-    public void subscribeExecutions() {
-        socket.subscribe(buildSubscribeCommand("execution"));
+    public void subscribeExecutions(IExecutionListener listener) {
+        messageProcessor.addExecutionListener(listener);
+        if( !subscribedExecutions ) {
+            subscribedExecutions = true;
+            socket.subscribe(buildSubscribeCommand("execution"));
+        }
     }
 
     @Override
     public void subscribeOrders(IOrderListener listener) {
         messageProcessor.addOrderListener(listener);
-        if( ! subscribedOrders ) {
+        if (!subscribedOrders) {
+            subscribedOrders = true;
             socket.subscribe(buildSubscribeCommand("order"));
-        } 
+        }
     }
 
     @Override
     public void subscribePositions(IPositionListener listener) {
         messageProcessor.addPositionListener(listener);
-        if( ! subscribedPositions ) {
+        if (!subscribedPositions) {
             socket.subscribe(buildSubscribeCommand("position"));
             subscribedPositions = true;
         }
-        
+
     }
 
     @Override
@@ -144,11 +177,11 @@ public class BitmexWebsocketClient implements IBitmexWebsocketClient {
     @Override
     public void subscribeQuotes(Ticker ticker, IQuoteListener listener) {
         messageProcessor.addQuoteListener(listener);
-        if( ! subscribedQuoteTickers.contains(ticker.getSymbol() ) ) {
+        if (!subscribedQuoteTickers.contains(ticker.getSymbol())) {
             subscribedQuoteTickers.add(ticker.getSymbol());
             socket.subscribe(buildSubscribeCommand("quote:" + ticker.getSymbol()));
-        } 
-        
+        }
+
     }
 
     @Override
@@ -159,7 +192,7 @@ public class BitmexWebsocketClient implements IBitmexWebsocketClient {
     @Override
     public void subscribeTrades(Ticker ticker, ITradeListener listener) {
         messageProcessor.addTradeListener(listener);
-        if( ! subscribedTradeTickers.contains(ticker.getSymbol()) ) {
+        if (!subscribedTradeTickers.contains(ticker.getSymbol())) {
             subscribedTradeTickers.add(ticker.getSymbol());
             socket.subscribe(buildSubscribeCommand("trade:" + ticker.getSymbol()));
         }
@@ -174,7 +207,9 @@ public class BitmexWebsocketClient implements IBitmexWebsocketClient {
     }
 
     protected String buildSubscribeCommand(String... args) {
-        return buildCommandJson("subscribe", args);
+        String command = buildCommandJson("subscribe", args);
+        subscribeCommandList.add(command);
+        return command;
     }
 
     protected String buildCommandJson(String command, Object... args) {
@@ -204,7 +239,7 @@ public class BitmexWebsocketClient implements IBitmexWebsocketClient {
     public boolean isConnected() {
         return connected;
     }
-    
+
     @Override
     public void quoteUpdated(BitmexQuote quoteData) {
     }
@@ -224,7 +259,5 @@ public class BitmexWebsocketClient implements IBitmexWebsocketClient {
             throw new SumZeroException(e);
         }
     }
-    
-    
 
 }

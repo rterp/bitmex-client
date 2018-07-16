@@ -10,11 +10,13 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
+import com.sumzerotrading.bitmex.entity.BitmexExecution;
 import com.sumzerotrading.bitmex.entity.BitmexOrder;
 import com.sumzerotrading.bitmex.entity.BitmexPosition;
 import com.sumzerotrading.bitmex.entity.BitmexQuote;
 import com.sumzerotrading.bitmex.entity.BitmexResponse;
 import com.sumzerotrading.bitmex.entity.BitmexTrade;
+import com.sumzerotrading.bitmex.listener.IExecutionListener;
 import com.sumzerotrading.bitmex.listener.IOrderListener;
 import com.sumzerotrading.bitmex.listener.IPositionListener;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -42,6 +44,7 @@ public class WebsocketMessageProcessor implements Runnable, IMessageProcessor {
     protected Set<IPositionListener> positionListeners = new HashSet<>();
     protected Set<IOrderListener> orderListeners = new HashSet<>();
     protected Set<ITradeListener> tradeListeners = new HashSet<>();
+    protected Set<IExecutionListener> executionListeners = new HashSet<>();
 
     @Override
     public void startProcessor() {
@@ -82,6 +85,13 @@ public class WebsocketMessageProcessor implements Runnable, IMessageProcessor {
     }
 
     @Override
+    public void addExecutionListener(IExecutionListener listener) {
+        executionListeners.add(listener);
+    }
+    
+    
+
+    @Override
     public void run() {
         while (shouldRun) {
             processNextMessage();
@@ -111,6 +121,8 @@ public class WebsocketMessageProcessor implements Runnable, IMessageProcessor {
                         processOrder(message);
                     } else if (tableString.equals("trade")) {
                         processTrade(message);
+                    } else if (tableString.equals("execution")) {
+                        processExecution(message);
                     }
                 }
             }
@@ -145,6 +157,12 @@ public class WebsocketMessageProcessor implements Runnable, IMessageProcessor {
         logger.debug("Parsed response: " + trade);
         fireTradeMessage(trade);
     }
+    
+    protected void processExecution(String message) {
+        BitmexResponse<BitmexExecution> execution = parseMessage(message, new TypeToken<BitmexResponse<BitmexExecution>>(){} );
+        logger.debug("Parsed response: " + execution);
+        fireExecutionMessage(execution);
+    }    
 
     protected <T> BitmexResponse parseMessage(String message, TypeToken type) {
         Type collectionType = type.getType();
@@ -207,5 +225,20 @@ public class WebsocketMessageProcessor implements Runnable, IMessageProcessor {
             }
         }
     }
+    
+    protected void fireExecutionMessage(BitmexResponse<BitmexExecution> execution) {
+        synchronized (quoteListeners) {
+            for (IExecutionListener listener : executionListeners) {
+                for (BitmexExecution data : execution.getData()) {
+                    try {
+                        listener.executionUpdated(data);
+                    } catch (Exception ex) {
+                        logger.error(ex.getMessage(), ex);
+                    }
+                }
+            }
+        }
+    }
+    
 
 }

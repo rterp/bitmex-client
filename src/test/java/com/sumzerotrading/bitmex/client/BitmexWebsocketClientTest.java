@@ -5,21 +5,19 @@
  */
 package com.sumzerotrading.bitmex.client;
 
-import com.sumzerotrading.bitmex.client.JettySocket;
-import com.sumzerotrading.bitmex.client.BitmexWebsocketClient;
-import com.sumzerotrading.bitmex.client.WebsocketMessageProcessor;
 import com.sumzerotrading.bitmex.listener.IQuoteListener;
 import com.sumzerotrading.data.StockTicker;
 import com.sumzerotrading.data.Ticker;
 import org.junit.After;
 import org.junit.AfterClass;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import static org.mockito.Matchers.any;
 import org.mockito.Mock;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -65,6 +63,29 @@ public class BitmexWebsocketClientTest {
     public void tearDown() {
     }
 
+    
+    @Test
+    public void testSocketDisconnectDetected_shouldReconnect() {
+        testClient.shouldReconnect = true;
+        testClient.apiKey = "myKey";
+        testClient.apiSecret = "mySecret";
+        testClient.subscribeCommandList.add("MyNewCommand");
+        doReturn(true).when(testClient).connect("myKey", "mySecret");
+        
+        testClient.socketDisconnectDetected();
+        verify(testClient,times(1)).connect("myKey", "mySecret");
+        verify(mockJettySocket,times(1)).subscribe("MyNewCommand");
+    }
+    
+    @Test
+    public void testSocketDisconnectDetected_shouldNotReconnect() {
+        testClient.shouldReconnect = false;
+        
+        testClient.socketDisconnectDetected();
+        verify(testClient,never()).connect(any(String.class), any(String.class));
+        
+    }
+    
     @Test
     public void testSubscribeQuotes_notSubscribed() {
         IQuoteListener mockQuoteListener = mock(IQuoteListener.class);

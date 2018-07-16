@@ -6,6 +6,7 @@
 package com.sumzerotrading.bitmex.client;
 
 import com.sumzerotrading.bitmex.entity.BitmexQuote;
+import com.sumzerotrading.bitmex.listener.IExecutionListener;
 import com.sumzerotrading.bitmex.listener.IOrderListener;
 import com.sumzerotrading.bitmex.listener.IPositionListener;
 import com.sumzerotrading.bitmex.listener.IQuoteListener;
@@ -30,7 +31,7 @@ public interface IBitmexWebsocketClient extends IQuoteListener {
 
     void quoteUpdated(BitmexQuote quoteData);
 
-    void subscribeExecutions();
+    void subscribeExecutions(IExecutionListener listener);
 
     void subscribeFunding(Ticker ticker);
 

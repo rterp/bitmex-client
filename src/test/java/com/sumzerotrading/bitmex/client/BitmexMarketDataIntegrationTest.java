@@ -7,6 +7,7 @@ package com.sumzerotrading.bitmex.client;
 
 import com.sumzerotrading.bitmex.entity.BitmexAmendOrder;
 import com.sumzerotrading.bitmex.entity.BitmexChartData;
+import com.sumzerotrading.bitmex.entity.BitmexExecution;
 import com.sumzerotrading.bitmex.entity.BitmexInstrument;
 import com.sumzerotrading.bitmex.entity.BitmexOrder;
 import com.sumzerotrading.bitmex.entity.BitmexTrade;
@@ -112,9 +113,9 @@ public class BitmexMarketDataIntegrationTest {
         BitmexOrder newOrder = client.amendOrder(amend);
         System.out.println("New order: " + newOrder);
     }
-    
-    //@Ignore
-    @Test
+
+    @Ignore
+    //@Test
     public void testSubmitMarketOrder() throws Exception {
         String apiKeyName = "";
         String apiKey = "";
@@ -122,18 +123,26 @@ public class BitmexMarketDataIntegrationTest {
         apiKeyName = keyProp.getApiKeyName();
         apiKey = keyProp.getApiKey();
         BitmexRestClient client = new BitmexRestClient(false, apiKeyName, apiKey);
+        BitmexWebsocketClient wsClient = new BitmexWebsocketClient(false);
+        wsClient.connect(apiKeyName, apiKey);
+        wsClient.subscribeExecutions((BitmexExecution execution) -> {
+            System.out.println(execution);
+        }
+        );
         BitmexOrder order = new BitmexOrder();
-        order.setSymbol("XBTUSD");
+        order.setSymbol("XBTU18");
         order.setSide("Buy");
-        order.setOrderQty(1.0);
+        order.setOrderQty(5000.0);
         order.setOrdType("Limit");
-        order.setExecInst("ParticipateDoNotInitiate");
-        order.setPrice(8000.0);
+        order.setPrice(7282.0);
+//        order.setExecInst("ParticipateDoNotInitiate");
+//        order.setPrice(8000.0);
 
         BitmexOrder result = client.submitOrder(order);
         System.out.println("Order returned is: " + result);
+        Thread.sleep(300000000);
 
-    }    
+    }
 
     @Test
     public void testGetChartData() {
@@ -141,12 +150,12 @@ public class BitmexMarketDataIntegrationTest {
         String apiKey = "";
         BitmexRestClient client = new BitmexRestClient(false, apiKeyName, apiKey);
         Ticker ticker = new StockTicker("XBTM18");
-        
+
         List<BitmexChartData> data = client.getChartData(ticker, 100, BitmexRestClient.ChartDataBinSize.ONE_MINUTE);
-        for( BitmexChartData point : data ) {
+        for (BitmexChartData point : data) {
             System.out.println("Data: " + point);
         }
-        
+
     }
-    
+
 }

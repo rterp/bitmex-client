@@ -7,6 +7,7 @@ package com.sumzerotrading.bitmex.client;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
+import com.sumzerotrading.bitmex.listener.WebsocketDisconnectListener;
 import com.sumzerotrading.data.SumZeroException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
@@ -33,10 +34,16 @@ public class JettySocket {
     protected Gson gson = new Gson();
     protected JsonParser parser = new JsonParser();
     protected IMessageProcessor messageProcessor;
+    protected WebsocketDisconnectListener disconnectListener = null;
 
 
     @SuppressWarnings("unused")
-    private Session session;
+    protected Session session;
+    
+    //Used by unit tests
+    protected JettySocket() {
+        this.closeLatch = null;
+    }
 
     public JettySocket(CountDownLatch latch, IMessageProcessor messageProcessor) {
         this.closeLatch = latch;
@@ -49,9 +56,13 @@ public class JettySocket {
 
     @OnWebSocketClose
     public void onClose(int statusCode, String reason) {
-        System.out.printf("Connection closed: %d - %s%n", statusCode, reason);
+        logger.error("Connection Closed: code: " + statusCode + " reason: " + reason);
+        shouldRun = false;
         this.session = null;
         connected = false;
+        if( disconnectListener != null ) {
+            disconnectListener.socketDisconnectDetected();
+        }
     }
 
     @OnWebSocketConnect

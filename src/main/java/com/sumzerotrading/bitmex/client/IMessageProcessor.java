@@ -5,6 +5,7 @@
  */
 package com.sumzerotrading.bitmex.client;
 
+import com.sumzerotrading.bitmex.listener.IExecutionListener;
 import com.sumzerotrading.bitmex.listener.IOrderListener;
 import com.sumzerotrading.bitmex.listener.IPositionListener;
 import com.sumzerotrading.bitmex.listener.IQuoteListener;
@@ -23,6 +24,8 @@ public interface IMessageProcessor {
     void addOrderListener(IOrderListener listener);
     
     void addTradeListener(ITradeListener listener);
+    
+    void addExecutionListener(IExecutionListener listener);
 
     void processMessage(String message);
 

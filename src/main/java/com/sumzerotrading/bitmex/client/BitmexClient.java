@@ -10,6 +10,7 @@ import com.sumzerotrading.bitmex.entity.BitmexChartData;
 import com.sumzerotrading.bitmex.entity.BitmexInstrument;
 import com.sumzerotrading.bitmex.entity.BitmexOrder;
 import com.sumzerotrading.bitmex.entity.BitmexQuote;
+import com.sumzerotrading.bitmex.listener.IExecutionListener;
 import com.sumzerotrading.bitmex.listener.IOrderListener;
 import com.sumzerotrading.bitmex.listener.IPositionListener;
 import com.sumzerotrading.bitmex.listener.IQuoteListener;
@@ -108,8 +109,8 @@ public class BitmexClient implements IBitmexClient {
     }
 
     @Override
-    public void subscribeExecutions() {
-        websocketClient.subscribeExecutions();
+    public void subscribeExecutions(IExecutionListener listener) {
+        websocketClient.subscribeExecutions(listener);
     }
 
     @Override
