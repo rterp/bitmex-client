@@ -89,8 +89,11 @@ public class BitmexRestClient implements IBitmexRestClient {
         mapper.registerModule(new JavaTimeModule());
         JacksonJaxbJsonProvider provider = new JacksonJaxbJsonProvider(mapper, new Annotations[0]);
         ClientConfig config = new ClientConfig();
-        config.property(ClientProperties.SUPPRESS_HTTP_COMPLIANCE_VALIDATION, true);        
-        client = ClientBuilder.newBuilder().register(provider).register(JacksonFeature.class).withConfig(config).build();
+        config.property(ClientProperties.SUPPRESS_HTTP_COMPLIANCE_VALIDATION, true);   
+        config.register(provider);
+        config.register(JacksonFeature.class);
+                
+        client = ClientBuilder.newBuilder().withConfig(config).build();
     }
 
     public BitmexRestClient(boolean useProduction, String apiKeyName, String apiKey) {

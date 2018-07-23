@@ -224,11 +224,12 @@ public class BitmexRestClientTest {
         BitmexOrder returnOrderObject = new BitmexOrder();
         BitmexCancelOrder cancelOrder = new BitmexCancelOrder();
         cancelOrder.setOrderID("MyOrderId");
+        BitmexOrder[] returnOrderArray = new BitmexOrder[] {returnOrderObject};
 
         doReturn(mockResponse).when(testClient).submitRequestWithBody("order", cancelOrder, BitmexRestClient.Verb.DELETE);
-        when(mockResponse.readEntity(BitmexOrder.class)).thenReturn(returnOrderObject);
+        when(mockResponse.readEntity(BitmexOrder[].class)).thenReturn(returnOrderArray);
         
-        assertEquals(returnOrderObject, testClient.cancelOrder(order));
+        assertEquals(returnOrderArray, testClient.cancelOrder(order));
     }    
     
     @Test
