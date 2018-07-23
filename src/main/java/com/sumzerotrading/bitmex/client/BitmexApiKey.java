@@ -22,13 +22,16 @@ public class BitmexApiKey {
 
     public static String PROPKEY_API_KEY_NAME = "api.key.name";
     public static String PROPKEY_API_KEY = "api.key";
+    public static String PROPKEY_USE_PRODUCTION = "use.production";
 
     protected String apiKeyName = "";
     protected String apiKey = "";
+    protected boolean useProduction = false;
 
-    public BitmexApiKey(String apiKeyName, String apiKey) {
+    public BitmexApiKey(String apiKeyName, String apiKey, boolean useProduction) {
         this.apiKeyName = apiKeyName;
         this.apiKey = apiKey;
+        this.useProduction = useProduction;
     }
 
     public String getApiKeyName() {
@@ -47,14 +50,24 @@ public class BitmexApiKey {
         this.apiKey = apiKey;
     }
 
+    public boolean isUseProduction() {
+        return useProduction;
+    }
+
+    public void setUseProduction(boolean useProduction) {
+        this.useProduction = useProduction;
+    }
+
+    
     public static BitmexApiKey readApiKey(String propFile) {
         Properties props = new Properties();
         try {
             props.load(new FileInputStream(propFile));
             String name  = props.getProperty(PROPKEY_API_KEY_NAME);
             String value = props.getProperty(PROPKEY_API_KEY);
+            boolean useProd = Boolean.parseBoolean(props.getProperty(PROPKEY_USE_PRODUCTION, "false"));
 
-            return new BitmexApiKey(name, value);
+            return new BitmexApiKey(name, value, useProd);
         } catch (IOException ex) {
             throw new SumZeroException(ex.getMessage(), ex);
         }
@@ -64,8 +77,9 @@ public class BitmexApiKey {
     @Override
     public int hashCode() {
         int hash = 7;
-        hash = 29 * hash + Objects.hashCode(this.apiKeyName);
-        hash = 29 * hash + Objects.hashCode(this.apiKey);
+        hash = 59 * hash + Objects.hashCode(this.apiKeyName);
+        hash = 59 * hash + Objects.hashCode(this.apiKey);
+        hash = 59 * hash + (this.useProduction ? 1 : 0);
         return hash;
     }
 
@@ -81,6 +95,9 @@ public class BitmexApiKey {
             return false;
         }
         final BitmexApiKey other = (BitmexApiKey) obj;
+        if (this.useProduction != other.useProduction) {
+            return false;
+        }
         if (!Objects.equals(this.apiKeyName, other.apiKeyName)) {
             return false;
         }
@@ -92,7 +109,9 @@ public class BitmexApiKey {
 
     @Override
     public String toString() {
-        return "BitmexApiKey{" + "apiKeyName=" + apiKeyName + ", apiKey=" + apiKey + '}';
+        return "BitmexApiKey{" + "apiKeyName=" + apiKeyName + ", apiKey=" + apiKey + ", useProduction=" + useProduction + '}';
     }
 
+    
+    
 }

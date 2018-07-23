@@ -21,7 +21,7 @@ public interface IBitmexRestClient {
 
     BitmexOrder amendOrder(BitmexAmendOrder order);
 
-    BitmexOrder cancelOrder(BitmexOrder order);
+    BitmexOrder[] cancelOrder(BitmexOrder order);
 
     List<BitmexChartData> getChartData(Ticker ticker, int count, ChartDataBinSize binSize);
 

@@ -12,6 +12,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.google.common.base.Strings;
 import com.sumzerotrading.bitmex.entity.BitmexChartData;
 import com.sumzerotrading.bitmex.entity.BitmexAmendOrder;
+import com.sumzerotrading.bitmex.entity.BitmexCancelOrder;
+import com.sumzerotrading.bitmex.entity.BitmexError;
 import com.sumzerotrading.bitmex.entity.BitmexOrder;
 import com.sumzerotrading.data.SumZeroException;
 import com.sumzerotrading.data.Ticker;
@@ -28,6 +30,8 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import org.apache.log4j.Logger;
+import org.glassfish.jersey.client.ClientConfig;
+import org.glassfish.jersey.client.ClientProperties;
 import org.glassfish.jersey.jackson.JacksonFeature;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.cfg.Annotations;
 import org.glassfish.jersey.jackson.internal.jackson.jaxrs.json.JacksonJaxbJsonProvider;
@@ -84,7 +88,9 @@ public class BitmexRestClient implements IBitmexRestClient {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
         JacksonJaxbJsonProvider provider = new JacksonJaxbJsonProvider(mapper, new Annotations[0]);
-        client = ClientBuilder.newBuilder().register(provider).register(JacksonFeature.class).build();
+        ClientConfig config = new ClientConfig();
+        config.property(ClientProperties.SUPPRESS_HTTP_COMPLIANCE_VALIDATION, true);        
+        client = ClientBuilder.newBuilder().register(provider).register(JacksonFeature.class).withConfig(config).build();
     }
 
     public BitmexRestClient(boolean useProduction, String apiKeyName, String apiKey) {
@@ -114,6 +120,7 @@ public class BitmexRestClient implements IBitmexRestClient {
     public BitmexOrder submitOrder(BitmexOrder order) {
         Response response = submitRequestWithBody("order", order, Verb.POST);
         logger.info("Response code: " + response.getStatus());
+        
         if (response.getStatus() == 503) {
             logger.error("503 response returned");
             throw new BitmexSystemOverloadedException(order);
@@ -122,10 +129,12 @@ public class BitmexRestClient implements IBitmexRestClient {
     }
 
     @Override
-    public BitmexOrder cancelOrder(BitmexOrder order) {
-        Response response = submitRequestWithBody("order", order, Verb.DELETE);
+    public BitmexOrder[] cancelOrder(BitmexOrder order) {
+        BitmexCancelOrder cancel = new BitmexCancelOrder();
+        cancel.setOrderID(order.getOrderID());
+        Response response = submitRequestWithBody("order", cancel, Verb.DELETE);
         logger.info("Response code: " + response.getStatus());
-        return response.readEntity(BitmexOrder.class);
+        return response.readEntity(BitmexOrder[].class);
     }
 
     @Override
@@ -183,8 +192,13 @@ public class BitmexRestClient implements IBitmexRestClient {
         addHeaders(builder, target.getUri(), verb.toString(), jsonObject);
         Entity entity = Entity.json(jsonObject);
         Response response = builder.build(verb.toString(), entity).invoke();
-        response.bufferEntity();
-        logger.debug("Response: " + response.readEntity(String.class));
+        response.bufferEntity();    
+        String stringResponse = response.readEntity(String.class);
+        logger.debug("Response: " + stringResponse);
+        if( stringResponse.contains("error") ) {
+            throw new BitmexException( response.readEntity(BitmexError.class));
+        }
+        
         return response;
     }
 

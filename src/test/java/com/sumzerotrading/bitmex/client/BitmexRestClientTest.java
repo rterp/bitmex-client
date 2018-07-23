@@ -11,6 +11,8 @@ import com.sumzerotrading.bitmex.entity.BitmexInstrument;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sumzerotrading.bitmex.entity.BitmexAmendOrder;
+import com.sumzerotrading.bitmex.entity.BitmexCancelOrder;
+import com.sumzerotrading.bitmex.entity.BitmexError;
 import com.sumzerotrading.bitmex.entity.BitmexOrder;
 import com.sumzerotrading.data.StockTicker;
 import com.sumzerotrading.data.SumZeroException;
@@ -217,10 +219,13 @@ public class BitmexRestClientTest {
     public void testCancelOrder() throws Exception {
         BitmexOrder order = new BitmexOrder();
         order.setOrderQty(2.0);
+        order.setOrderID("MyOrderId");
         
         BitmexOrder returnOrderObject = new BitmexOrder();
+        BitmexCancelOrder cancelOrder = new BitmexCancelOrder();
+        cancelOrder.setOrderID("MyOrderId");
 
-        doReturn(mockResponse).when(testClient).submitRequestWithBody("order", order, BitmexRestClient.Verb.DELETE);
+        doReturn(mockResponse).when(testClient).submitRequestWithBody("order", cancelOrder, BitmexRestClient.Verb.DELETE);
         when(mockResponse.readEntity(BitmexOrder.class)).thenReturn(returnOrderObject);
         
         assertEquals(returnOrderObject, testClient.cancelOrder(order));
@@ -261,6 +266,38 @@ public class BitmexRestClientTest {
         verify(testClient, times(1)).addHeaders(mockBuilder, uri, "POST", "MyJsonObject");
         verify(mockResponse, times(1)).bufferEntity();
     }
+    
+    @Test
+    public void testSubmitRequestWithBody_NotGet_ThrowsException() throws Exception {
+        String responseString = "{\"error\":{\"message\":\"Too many open orders\",\"name\":\"HTTPError\"}}";
+        BitmexError error = new BitmexError();
+        error.setMessage(responseString);
+        error.setName("MyError");
+        BitmexOrder order = new BitmexOrder();
+        Invocation mockInvocation = mock(Invocation.class);
+        doReturn("MyJsonObject").when(testClient).toJson(order);
+        URI uri = new URI("https://www.bitmex.com/api/v1/order");
+        when(mockClient.target(testClient.productionApiUrl)).thenReturn(mockWebTarget);
+        when(mockWebTarget.path("order")).thenReturn(mockWebTarget);
+        when(mockWebTarget.request(MediaType.APPLICATION_JSON)).thenReturn(mockBuilder);
+        when(mockWebTarget.getUri()).thenReturn(uri);
+        doNothing().when(testClient).addHeaders(mockBuilder, uri, "POST", "MyJsonObject" );
+
+        when(mockBuilder.build(eq("POST"), any(Entity.class))).thenReturn(mockInvocation);        
+        when(mockInvocation.invoke()).thenReturn(mockResponse);
+        when(mockResponse.readEntity(String.class)).thenReturn(responseString);
+        when(mockResponse.readEntity(BitmexError.class)).thenReturn(error);
+        
+        try {
+            testClient.submitRequestWithBody("order", order, BitmexRestClient.Verb.POST);
+            fail();
+        } catch( BitmexException ex ) {
+            assertEquals( error, ex.getError());
+        }
+        
+        verify(testClient, times(1)).addHeaders(mockBuilder, uri, "POST", "MyJsonObject");
+        verify(mockResponse, times(1)).bufferEntity();
+    }    
     
     
     

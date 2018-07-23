@@ -47,7 +47,7 @@ public class BitmexClient implements IBitmexClient {
     }
 
     @Override
-    public BitmexOrder cancelOrder(BitmexOrder order) {
+    public BitmexOrder[] cancelOrder(BitmexOrder order) {
         return restClient.cancelOrder(order);
     }
 
