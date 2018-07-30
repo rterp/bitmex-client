@@ -5,40 +5,28 @@
  */
 package com.sumzerotrading.bitmex.entity;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.Objects;
 
 /**
  *
  * @author RobTerpilowski
  */
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class BitmexError {
     
-    protected String message;
-    protected String name;
+    protected BitmexErrorError error;
 
-    public String getMessage() {
-        return message;
+    public BitmexErrorError getError() {
+        return error;
     }
 
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
+    public void setError(BitmexErrorError error) {
+        this.error = error;
     }
 
     @Override
     public int hashCode() {
         int hash = 7;
-        hash = 79 * hash + Objects.hashCode(this.message);
-        hash = 79 * hash + Objects.hashCode(this.name);
+        hash = 89 * hash + Objects.hashCode(this.error);
         return hash;
     }
 
@@ -54,10 +42,7 @@ public class BitmexError {
             return false;
         }
         final BitmexError other = (BitmexError) obj;
-        if (!Objects.equals(this.message, other.message)) {
-            return false;
-        }
-        if (!Objects.equals(this.name, other.name)) {
+        if (!Objects.equals(this.error, other.error)) {
             return false;
         }
         return true;
@@ -65,9 +50,8 @@ public class BitmexError {
 
     @Override
     public String toString() {
-        return "BitmexError{" + "message=" + message + ", name=" + name + '}';
+        return "BitmexErrorError{" + "error=" + error + '}';
     }
-    
     
     
     

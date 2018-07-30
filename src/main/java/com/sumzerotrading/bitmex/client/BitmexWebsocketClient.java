@@ -70,7 +70,7 @@ public class BitmexWebsocketClient implements IBitmexWebsocketClient, WebsocketD
         }
         messageProcessor = new WebsocketMessageProcessor();
         messageProcessor.startProcessor();
-        socket = new JettySocket(latch, messageProcessor);
+        socket = new JettySocket(latch, messageProcessor, this);
         
     }
 
@@ -110,6 +110,7 @@ public class BitmexWebsocketClient implements IBitmexWebsocketClient, WebsocketD
 
     @Override
     public void socketDisconnectDetected() {
+        logger.error("Disconnect detected, should reconnect: " + shouldReconnect );
         if (shouldReconnect) {
             logger.error("Disconnect detected....reconnecting");
             connect(apiKey, apiSecret);
@@ -258,6 +259,11 @@ public class BitmexWebsocketClient implements IBitmexWebsocketClient, WebsocketD
         } catch (Exception e) {
             throw new SumZeroException(e);
         }
+    }
+    
+    public int getMessageProcessorCount() {
+        return messageProcessor.getQueueSize();
+               
     }
 
 }

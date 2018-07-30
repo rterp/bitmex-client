@@ -5,7 +5,7 @@
  */
 package com.sumzerotrading.bitmex.client;
 
-import com.sumzerotrading.bitmex.entity.BitmexError;
+import com.sumzerotrading.bitmex.entity.BitmexErrorError;
 
 /**
  *
@@ -13,13 +13,13 @@ import com.sumzerotrading.bitmex.entity.BitmexError;
  */
 public class BitmexException extends RuntimeException {
     
-    protected BitmexError error;
+    protected BitmexErrorError error;
 
-    public BitmexException(BitmexError error) {
+    public BitmexException(BitmexErrorError error) {
         this.error = error;
     }
 
-    public BitmexError getError() {
+    public BitmexErrorError getError() {
         return error;
     }
     

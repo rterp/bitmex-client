@@ -79,6 +79,14 @@ public class WebsocketMessageProcessorTest {
     public void tearDown() {
     }
 
+    
+    @Test
+    public void testGetSize() {
+        when(mockQueue.size()).thenReturn(50);
+        
+        assertEquals(50, testProcessor.getQueueSize());
+    }
+    
     @Test
     public void testStartAndStopProcessor() throws Exception {
         doNothing().when(testProcessor).processNextMessage();

@@ -199,7 +199,7 @@ public class BitmexRestClient implements IBitmexRestClient {
         String stringResponse = response.readEntity(String.class);
         logger.debug("Response: " + stringResponse);
         if( stringResponse.contains("error") ) {
-            throw new BitmexException( response.readEntity(BitmexError.class));
+            throw new BitmexException( response.readEntity(BitmexError.class).getError() );
         }
         
         return response;

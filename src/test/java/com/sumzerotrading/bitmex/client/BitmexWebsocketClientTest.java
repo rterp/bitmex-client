@@ -65,6 +65,28 @@ public class BitmexWebsocketClientTest {
 
     
     @Test
+    public void testConstructor_UseProduction() {
+        BitmexWebsocketClient client=  new BitmexWebsocketClient(true);
+        
+        assertEquals(client.latch, client.socket.closeLatch);
+        assertEquals(client.messageProcessor, client.socket.messageProcessor);
+        assertEquals(client, client.socket.disconnectListener);
+        assertEquals(client.productionApiUrl, client.websocketUrl);
+        
+    }
+    
+    @Test
+    public void testConstructor_DontUseProduction() {
+        BitmexWebsocketClient client=  new BitmexWebsocketClient(false);
+        
+        assertEquals(client.latch, client.socket.closeLatch);
+        assertEquals(client.messageProcessor, client.socket.messageProcessor);
+        assertEquals(client, client.socket.disconnectListener);
+        assertEquals(client.testnetApiUrl, client.websocketUrl);        
+    }
+    
+    
+    @Test
     public void testSocketDisconnectDetected_shouldReconnect() {
         testClient.shouldReconnect = true;
         testClient.apiKey = "myKey";

@@ -5,14 +5,13 @@
  */
 package com.sumzerotrading.bitmex.client;
 
-import com.sumzerotrading.bitmex.client.BitmexRestClient;
-import com.sumzerotrading.bitmex.client.ISignatureGenerator;
 import com.sumzerotrading.bitmex.entity.BitmexInstrument;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sumzerotrading.bitmex.entity.BitmexAmendOrder;
 import com.sumzerotrading.bitmex.entity.BitmexCancelOrder;
 import com.sumzerotrading.bitmex.entity.BitmexError;
+import com.sumzerotrading.bitmex.entity.BitmexErrorError;
 import com.sumzerotrading.bitmex.entity.BitmexOrder;
 import com.sumzerotrading.data.StockTicker;
 import com.sumzerotrading.data.SumZeroException;
@@ -272,8 +271,10 @@ public class BitmexRestClientTest {
     public void testSubmitRequestWithBody_NotGet_ThrowsException() throws Exception {
         String responseString = "{\"error\":{\"message\":\"Too many open orders\",\"name\":\"HTTPError\"}}";
         BitmexError error = new BitmexError();
-        error.setMessage(responseString);
-        error.setName("MyError");
+        BitmexErrorError errorError = new BitmexErrorError();
+        errorError.setMessage("Too many open orders");
+        errorError.setName("MyError");
+        error.setError(errorError);
         BitmexOrder order = new BitmexOrder();
         Invocation mockInvocation = mock(Invocation.class);
         doReturn("MyJsonObject").when(testClient).toJson(order);
@@ -293,7 +294,7 @@ public class BitmexRestClientTest {
             testClient.submitRequestWithBody("order", order, BitmexRestClient.Verb.POST);
             fail();
         } catch( BitmexException ex ) {
-            assertEquals( error, ex.getError());
+            assertEquals( errorError, ex.getError());
         }
         
         verify(testClient, times(1)).addHeaders(mockBuilder, uri, "POST", "MyJsonObject");

@@ -49,11 +49,19 @@ public class WebsocketMessageProcessor implements Runnable, IMessageProcessor {
     @Override
     public void startProcessor() {
         shouldRun = true;
-        Thread thread = new Thread(this, "WebsocketMessageProcess");
+        Thread thread = new Thread(this, "WebsocketMessageProcessor");
         thread.setDaemon(true);
         thread.start();
     }
 
+    @Override
+    public int getQueueSize() {
+        return messageQueue.size();
+    }
+
+    
+    
+    
     @Override
     public void stopProcessor() {
         shouldRun = false;
@@ -95,10 +103,7 @@ public class WebsocketMessageProcessor implements Runnable, IMessageProcessor {
     public void run() {
         while (shouldRun) {
             processNextMessage();
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException ex) {
-            }
+            Thread.yield();
         }
     }
 

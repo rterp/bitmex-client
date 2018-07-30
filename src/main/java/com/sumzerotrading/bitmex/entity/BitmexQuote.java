@@ -6,6 +6,7 @@
 package com.sumzerotrading.bitmex.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.Objects;
 
 /**
  *
@@ -19,8 +20,7 @@ public class BitmexQuote {
     protected double askPrice;
     protected int bidSize;
     protected int askSize;
-//    @JsonDeserialize( using = ZonedDateTimeDeserializer.class)
-//    protected ZonedDateTime timestamp;
+    protected String timestamp;
 
     public String getSymbol() {
         return symbol;
@@ -62,70 +62,64 @@ public class BitmexQuote {
         this.askSize = askSize;
     }
 
-//    public ZonedDateTime getTimestamp() {
-//        return timestamp;
-//    }
-//
-//    public void setTimestamp(ZonedDateTime timestamp) {
-//        this.timestamp = timestamp;
-//    }
-//
-//    @Override
-//    public int hashCode() {
-//        int hash = 3;
-//        hash = 71 * hash + Objects.hashCode(this.symbol);
-//        hash = 71 * hash + (int) (Double.doubleToLongBits(this.bidPrice) ^ (Double.doubleToLongBits(this.bidPrice) >>> 32));
-//        hash = 71 * hash + (int) (Double.doubleToLongBits(this.askPrice) ^ (Double.doubleToLongBits(this.askPrice) >>> 32));
-//        hash = 71 * hash + this.bidSize;
-//        hash = 71 * hash + this.askSize;
-//        hash = 71 * hash + Objects.hashCode(this.timestamp);
-//        return hash;
-//    }
-//
-//    @Override
-//    public boolean equals(Object obj) {
-//        if (this == obj) {
-//            return true;
-//        }
-//        if (obj == null) {
-//            return false;
-//        }
-//        if (getClass() != obj.getClass()) {
-//            return false;
-//        }
-//        final BitmexQuoteData other = (BitmexQuoteData) obj;
-//        if (Double.doubleToLongBits(this.bidPrice) != Double.doubleToLongBits(other.bidPrice)) {
-//            return false;
-//        }
-//        if (Double.doubleToLongBits(this.askPrice) != Double.doubleToLongBits(other.askPrice)) {
-//            return false;
-//        }
-//        if (this.bidSize != other.bidSize) {
-//            return false;
-//        }
-//        if (this.askSize != other.askSize) {
-//            return false;
-//        }
-//        if (!Objects.equals(this.symbol, other.symbol)) {
-//            return false;
-//        }
-//        if (!Objects.equals(this.timestamp, other.timestamp)) {
-//            return false;
-//        }
-//        return true;
-//    }
-//
-//    @Override
-//    public String toString() {
-//        return "BitmexQuoteData{" + "symbol=" + symbol + ", bidPrice=" + bidPrice + ", askPrice=" + askPrice + ", bidSize=" + bidSize + ", askSize=" + askSize + ", timestamp=" + timestamp + '}';
-//    }
-//
+    public String getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(String timestamp) {
+        this.timestamp = timestamp;
+    }
+    
+    
+
+    @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 37 * hash + Objects.hashCode(this.symbol);
+        hash = 37 * hash + (int) (Double.doubleToLongBits(this.bidPrice) ^ (Double.doubleToLongBits(this.bidPrice) >>> 32));
+        hash = 37 * hash + (int) (Double.doubleToLongBits(this.askPrice) ^ (Double.doubleToLongBits(this.askPrice) >>> 32));
+        hash = 37 * hash + this.bidSize;
+        hash = 37 * hash + this.askSize;
+        hash = 37 * hash + Objects.hashCode(this.timestamp);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final BitmexQuote other = (BitmexQuote) obj;
+        if (Double.doubleToLongBits(this.bidPrice) != Double.doubleToLongBits(other.bidPrice)) {
+            return false;
+        }
+        if (Double.doubleToLongBits(this.askPrice) != Double.doubleToLongBits(other.askPrice)) {
+            return false;
+        }
+        if (this.bidSize != other.bidSize) {
+            return false;
+        }
+        if (this.askSize != other.askSize) {
+            return false;
+        }
+        if (!Objects.equals(this.symbol, other.symbol)) {
+            return false;
+        }
+        if (!Objects.equals(this.timestamp, other.timestamp)) {
+            return false;
+        }
+        return true;
+    }
 
     @Override
     public String toString() {
-        return "BitmexQuoteData{" + "symbol=" + symbol + ", bidPrice=" + bidPrice + ", askPrice=" + askPrice + ", bidSize=" + bidSize + ", askSize=" + askSize + '}';
+        return "BitmexQuote{" + "symbol=" + symbol + ", bidPrice=" + bidPrice + ", askPrice=" + askPrice + ", bidSize=" + bidSize + ", askSize=" + askSize + ", timestamp=" + timestamp + '}';
     }
-
-    
     
 }

@@ -6,9 +6,11 @@
 package com.sumzerotrading.bitmex.client;
 
 import com.sumzerotrading.bitmex.listener.WebsocketDisconnectListener;
+import java.util.concurrent.CountDownLatch;
 import org.eclipse.jetty.websocket.api.Session;
 import org.junit.After;
 import org.junit.AfterClass;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import org.junit.Before;
@@ -55,6 +57,24 @@ public class JettySocketTest {
     public void tearDown() {
     }
 
+    
+    @Test
+    public void testConstructors() {
+        CountDownLatch latch = new CountDownLatch(0);
+        IMessageProcessor mp = mock(IMessageProcessor.class);
+        WebsocketDisconnectListener wdl = mock(WebsocketDisconnectListener.class);
+        JettySocket js = new JettySocket(latch, mp, wdl);
+        
+        assertEquals( latch, js.closeLatch);
+        assertEquals( mp, js.messageProcessor);
+        assertEquals( wdl, js.disconnectListener);
+        
+        js = new JettySocket(latch, mp);
+        assertEquals( latch, js.closeLatch);
+        assertEquals( mp, js.messageProcessor);
+        assertNull(js.disconnectListener);
+    }
+    
     
     @Test
     public void testOnClose() {

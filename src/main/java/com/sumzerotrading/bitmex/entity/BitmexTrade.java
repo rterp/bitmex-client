@@ -17,6 +17,7 @@ public class BitmexTrade {
     protected String side;
     protected double price;
     protected double size;
+    protected String timestamp;
 
     public String getSymbol() {
         return symbol;
@@ -50,13 +51,22 @@ public class BitmexTrade {
         this.size = size;
     }
 
+    public String getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(String timestamp) {
+        this.timestamp = timestamp;
+    }
+
     @Override
     public int hashCode() {
-        int hash = 7;
-        hash = 11 * hash + Objects.hashCode(this.symbol);
-        hash = 11 * hash + Objects.hashCode(this.side);
-        hash = 11 * hash + (int) (Double.doubleToLongBits(this.price) ^ (Double.doubleToLongBits(this.price) >>> 32));
-        hash = 11 * hash + (int) (Double.doubleToLongBits(this.size) ^ (Double.doubleToLongBits(this.size) >>> 32));
+        int hash = 5;
+        hash = 97 * hash + Objects.hashCode(this.symbol);
+        hash = 97 * hash + Objects.hashCode(this.side);
+        hash = 97 * hash + (int) (Double.doubleToLongBits(this.price) ^ (Double.doubleToLongBits(this.price) >>> 32));
+        hash = 97 * hash + (int) (Double.doubleToLongBits(this.size) ^ (Double.doubleToLongBits(this.size) >>> 32));
+        hash = 97 * hash + Objects.hashCode(this.timestamp);
         return hash;
     }
 
@@ -84,14 +94,16 @@ public class BitmexTrade {
         if (!Objects.equals(this.side, other.side)) {
             return false;
         }
+        if (!Objects.equals(this.timestamp, other.timestamp)) {
+            return false;
+        }
         return true;
     }
 
     @Override
     public String toString() {
-        return "BitmexTrade{" + "symbol=" + symbol + ", side=" + side + ", price=" + price + ", size=" + size + '}';
+        return "BitmexTrade{" + "symbol=" + symbol + ", side=" + side + ", price=" + price + ", size=" + size + ", timestamp=" + timestamp + '}';
     }
-    
     
     
     

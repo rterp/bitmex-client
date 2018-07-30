@@ -33,4 +33,6 @@ public interface IMessageProcessor {
 
     void stopProcessor();
     
+    int getQueueSize();
+    
 }

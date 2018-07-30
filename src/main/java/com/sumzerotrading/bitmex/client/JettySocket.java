@@ -49,11 +49,18 @@ public class JettySocket {
         this.closeLatch = latch;
         this.messageProcessor = messageProcessor;
     }
+    
+    public JettySocket(CountDownLatch latch, IMessageProcessor messageProcessor, WebsocketDisconnectListener disconnectListener) {
+        this.closeLatch = latch;
+        this.messageProcessor = messageProcessor;
+        this.disconnectListener = disconnectListener;
+    }    
 
     public boolean awaitClose(int duration, TimeUnit unit) throws InterruptedException {
         return this.closeLatch.await(duration, unit);
     }
-
+    
+    
     @OnWebSocketClose
     public void onClose(int statusCode, String reason) {
         logger.error("Connection Closed: code: " + statusCode + " reason: " + reason);
