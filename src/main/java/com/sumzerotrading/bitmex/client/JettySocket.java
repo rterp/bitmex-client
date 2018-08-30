@@ -7,8 +7,11 @@ package com.sumzerotrading.bitmex.client;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParser;
+import com.sumzerotrading.bitmex.listener.IPongListener;
 import com.sumzerotrading.bitmex.listener.WebsocketDisconnectListener;
 import com.sumzerotrading.data.SumZeroException;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -25,8 +28,10 @@ import org.eclipse.jetty.websocket.api.annotations.WebSocket;
  */
 @WebSocket(maxTextMessageSize = (64 * 1024 * 100), maxBinaryMessageSize = -1)
 //@WebSocket
-public class JettySocket {
+public class JettySocket implements IPongListener {
 
+    protected final long MAX_PONG_TIME_SECONDS = 20;
+    
     protected Logger logger = Logger.getLogger(JettySocket.class);
     protected final CountDownLatch closeLatch;
     protected boolean connected = false;
@@ -35,6 +40,9 @@ public class JettySocket {
     protected JsonParser parser = new JsonParser();
     protected IMessageProcessor messageProcessor;
     protected WebsocketDisconnectListener disconnectListener = null;
+    protected Timer pingPongTimer;
+    protected long lastPongTime = 0;
+    
 
 
     @SuppressWarnings("unused")
@@ -46,14 +54,15 @@ public class JettySocket {
     }
 
     public JettySocket(CountDownLatch latch, IMessageProcessor messageProcessor) {
-        this.closeLatch = latch;
-        this.messageProcessor = messageProcessor;
+        this(latch, messageProcessor, null);
     }
     
     public JettySocket(CountDownLatch latch, IMessageProcessor messageProcessor, WebsocketDisconnectListener disconnectListener) {
         this.closeLatch = latch;
         this.messageProcessor = messageProcessor;
         this.disconnectListener = disconnectListener;
+        pingPongTimer = getPingPongTimer();
+        pingPongTimer.scheduleAtFixedRate(getPingPongTimerTask(), 0, 10000);
     }    
 
     public boolean awaitClose(int duration, TimeUnit unit) throws InterruptedException {
@@ -89,7 +98,7 @@ public class JettySocket {
                         Future<Void> fut = session.getRemote().sendStringByFuture(pingCommand);
                         logger.info("Sending ping");
                     }
-                    Thread.sleep(30000);
+                    Thread.sleep(10000);
                 } catch (Exception ex) {
                     ex.printStackTrace();
                 }
@@ -106,6 +115,13 @@ public class JettySocket {
         messageProcessor.processMessage(msg);
     }
 
+    @Override
+    public void pongReceived() {
+        lastPongTime = getCurrentTime();
+    }
+
+    
+    
     public boolean isConnected() {
         return connected;
     }
@@ -118,5 +134,39 @@ public class JettySocket {
         } catch (Exception ex) {
             throw new SumZeroException(ex);
         }
+    }
+    
+    protected Timer getPingPongTimer() {
+        return new Timer("PingPongTimer", true);
+    }
+    
+    protected TimerTask getPingPongTimerTask() {
+        return new TimerTask() {
+            @Override
+            public void run() {
+                try {
+                    checkLastPongTime();
+                } catch( Exception ex ) {
+                    logger.error(ex.getMessage(), ex);
+                }
+            }
+        };
+    }
+
+    
+    protected void checkLastPongTime() {
+        if( lastPongTime > 0 ) {
+            long responseDelay = getCurrentTime() - lastPongTime;
+            if( responseDelay >= (MAX_PONG_TIME_SECONDS * 1000) ) {
+                logger.error("Pong not detected in " + responseDelay + "ms");
+                disconnectListener.socketDisconnectDetected();
+            }
+        } else {
+            logger.info("Last pong time has not been set");
+        }
+    }
+    
+    protected long getCurrentTime() {
+        return System.currentTimeMillis();
     }
 }

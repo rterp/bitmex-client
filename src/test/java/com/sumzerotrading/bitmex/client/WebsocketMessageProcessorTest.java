@@ -15,6 +15,7 @@ import com.sumzerotrading.bitmex.entity.BitmexQuote;
 import com.sumzerotrading.bitmex.entity.BitmexResponse;
 import com.sumzerotrading.bitmex.entity.BitmexTrade;
 import com.sumzerotrading.bitmex.listener.IOrderListener;
+import com.sumzerotrading.bitmex.listener.IPongListener;
 import com.sumzerotrading.bitmex.listener.IPositionListener;
 import com.sumzerotrading.bitmex.listener.IQuoteListener;
 import com.sumzerotrading.bitmex.listener.ITradeListener;
@@ -25,6 +26,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -149,6 +151,16 @@ public class WebsocketMessageProcessorTest {
         assertEquals(1, testProcessor.tradeListeners.size());
         assertTrue(testProcessor.tradeListeners.contains(mockListener));
     }
+    
+    @Test
+    public void testAddPongListner() {
+        IPongListener mockListener = mock(IPongListener.class);
+
+        testProcessor.addPongListener(mockListener);
+
+        assertEquals(1, testProcessor.pongListeners.size());
+        assertTrue(testProcessor.pongListeners.contains(mockListener));
+    }
 
     @Test
     public void testRun_shouldNotRun() {
@@ -194,6 +206,21 @@ public class WebsocketMessageProcessorTest {
     }
     
     @Test
+    public void testProcessNextMessage_PongMessage() throws Exception {
+        String message = "Pong";
+        JsonElement element = new JsonPrimitive(Boolean.TRUE);
+        when(mockQueue.take()).thenReturn(message);
+
+        testProcessor.processNextMessage();
+        
+        verify(testProcessor,times(1)).firePongReceived();
+        verify(testProcessor, never()).processOrder(any(String.class));
+        verify(testProcessor, never()).processPosition(any(String.class));
+        verify(testProcessor, never()).processQuote(any(String.class));
+        verify(testProcessor, never()).processTrade(any(String.class));
+    }
+    
+    @Test
     public void testProcessNextMessage_JsonSyntaxException() throws Exception {
         String message = "{ masdffasdf ";
         when(mockQueue.take()).thenReturn(message);
@@ -211,6 +238,7 @@ public class WebsocketMessageProcessorTest {
         when(mockQueue.take()).thenThrow(new RuntimeException());
         
         testProcessor.processNextMessage();
+        
         
         verify(testProcessor, never()).processOrder(any(String.class));
         verify(testProcessor, never()).processPosition(any(String.class));

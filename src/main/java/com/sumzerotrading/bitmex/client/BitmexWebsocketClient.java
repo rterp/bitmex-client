@@ -68,10 +68,14 @@ public class BitmexWebsocketClient implements IBitmexWebsocketClient, WebsocketD
         } else {
             websocketUrl = testnetApiUrl;
         }
-        messageProcessor = new WebsocketMessageProcessor();
+        init();
+    }
+    
+    protected void init() {
+        messageProcessor = buildMessageProcessor();
         messageProcessor.startProcessor();
-        socket = new JettySocket(latch, messageProcessor, this);
-        
+        socket = buildJettySocket();
+        messageProcessor.addPongListener(socket);        
     }
 
     @Override
@@ -89,6 +93,7 @@ public class BitmexWebsocketClient implements IBitmexWebsocketClient, WebsocketD
             URI echoUri = new URI(websocketUrl);
             ClientUpgradeRequest request = new ClientUpgradeRequest();
             client.connect(socket, echoUri, request);
+            
 
             logger.info("Connecting to : " + echoUri);
             latch.await(15, TimeUnit.SECONDS);
@@ -123,7 +128,7 @@ public class BitmexWebsocketClient implements IBitmexWebsocketClient, WebsocketD
                 }
             }
         } else {
-            logger.info("Disconnect detected, will not reconnect");
+            logger.info("Disconnect detected, but will not reconnect");
         }
     }
 
@@ -266,4 +271,13 @@ public class BitmexWebsocketClient implements IBitmexWebsocketClient, WebsocketD
                
     }
 
+    
+    protected IMessageProcessor buildMessageProcessor() {
+        return  new WebsocketMessageProcessor();
+    }
+    
+    protected JettySocket buildJettySocket() {
+        return new JettySocket(latch, messageProcessor, this);
+    }
+    
 }

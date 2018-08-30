@@ -63,29 +63,40 @@ public class BitmexWebsocketClientTest {
     public void tearDown() {
     }
 
-    
     @Test
     public void testConstructor_UseProduction() {
-        BitmexWebsocketClient client=  new BitmexWebsocketClient(true);
-        
-        assertEquals(client.latch, client.socket.closeLatch);
-        assertEquals(client.messageProcessor, client.socket.messageProcessor);
-        assertEquals(client, client.socket.disconnectListener);
+        BitmexWebsocketClient client = new BitmexWebsocketClient(true);
         assertEquals(client.productionApiUrl, client.websocketUrl);
-        
     }
-    
+
     @Test
     public void testConstructor_DontUseProduction() {
-        BitmexWebsocketClient client=  new BitmexWebsocketClient(false);
-        
-        assertEquals(client.latch, client.socket.closeLatch);
-        assertEquals(client.messageProcessor, client.socket.messageProcessor);
-        assertEquals(client, client.socket.disconnectListener);
-        assertEquals(client.testnetApiUrl, client.websocketUrl);        
+        BitmexWebsocketClient client = new BitmexWebsocketClient(false);
+        assertEquals(client.testnetApiUrl, client.websocketUrl);
     }
-    
-    
+
+    @Test
+    public void testBuildJettySocket() {
+        JettySocket socket = testClient.buildJettySocket();
+        assertEquals(testClient, socket.disconnectListener);
+        assertEquals(testClient.latch, socket.closeLatch);
+        assertEquals(testClient.messageProcessor, socket.messageProcessor);
+    }
+
+    @Test
+    public void testInit() {
+        JettySocket mockJettySocket = mock(JettySocket.class);
+        IMessageProcessor mockMessageProcessor = mock(IMessageProcessor.class);
+
+        doReturn(mockJettySocket).when(testClient).buildJettySocket();
+        doReturn(mockMessageProcessor).when(testClient).buildMessageProcessor();
+
+        testClient.init();
+
+        verify(mockMessageProcessor, times(1)).startProcessor();
+        verify(mockMessageProcessor, times(1)).addPongListener(mockJettySocket);
+    }
+
     @Test
     public void testSocketDisconnectDetected_shouldReconnect() {
         testClient.shouldReconnect = true;
@@ -93,21 +104,21 @@ public class BitmexWebsocketClientTest {
         testClient.apiSecret = "mySecret";
         testClient.subscribeCommandList.add("MyNewCommand");
         doReturn(true).when(testClient).connect("myKey", "mySecret");
-        
+
         testClient.socketDisconnectDetected();
-        verify(testClient,times(1)).connect("myKey", "mySecret");
-        verify(mockJettySocket,times(1)).subscribe("MyNewCommand");
+        verify(testClient, times(1)).connect("myKey", "mySecret");
+        verify(mockJettySocket, times(1)).subscribe("MyNewCommand");
     }
-    
+
     @Test
     public void testSocketDisconnectDetected_shouldNotReconnect() {
         testClient.shouldReconnect = false;
-        
+
         testClient.socketDisconnectDetected();
-        verify(testClient,never()).connect(any(String.class), any(String.class));
-        
+        verify(testClient, never()).connect(any(String.class), any(String.class));
+
     }
-    
+
     @Test
     public void testSubscribeQuotes_notSubscribed() {
         IQuoteListener mockQuoteListener = mock(IQuoteListener.class);

@@ -199,6 +199,7 @@ public class BitmexRestClient implements IBitmexRestClient {
         String stringResponse = response.readEntity(String.class);
         logger.debug("Response: " + stringResponse);
         if( stringResponse.contains("error") ) {
+            logger.info("HTTP: " + verb.name() + " Error Submitting object: " + jsonObject);
             throw new BitmexException( response.readEntity(BitmexError.class).getError() );
         }
         

@@ -18,6 +18,7 @@ import com.sumzerotrading.bitmex.entity.BitmexResponse;
 import com.sumzerotrading.bitmex.entity.BitmexTrade;
 import com.sumzerotrading.bitmex.listener.IExecutionListener;
 import com.sumzerotrading.bitmex.listener.IOrderListener;
+import com.sumzerotrading.bitmex.listener.IPongListener;
 import com.sumzerotrading.bitmex.listener.IPositionListener;
 import java.util.concurrent.LinkedBlockingQueue;
 import org.apache.log4j.Logger;
@@ -26,7 +27,6 @@ import com.sumzerotrading.bitmex.listener.ITradeListener;
 import java.lang.reflect.Type;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.logging.Level;
 
 /**
  *
@@ -45,6 +45,7 @@ public class WebsocketMessageProcessor implements Runnable, IMessageProcessor {
     protected Set<IOrderListener> orderListeners = new HashSet<>();
     protected Set<ITradeListener> tradeListeners = new HashSet<>();
     protected Set<IExecutionListener> executionListeners = new HashSet<>();
+    protected Set<IPongListener> pongListeners = new HashSet<>();
 
     @Override
     public void startProcessor() {
@@ -58,8 +59,6 @@ public class WebsocketMessageProcessor implements Runnable, IMessageProcessor {
     public int getQueueSize() {
         return messageQueue.size();
     }
-
-    
     
     
     @Override
@@ -96,6 +95,12 @@ public class WebsocketMessageProcessor implements Runnable, IMessageProcessor {
     public void addExecutionListener(IExecutionListener listener) {
         executionListeners.add(listener);
     }
+
+    @Override
+    public void addPongListener(IPongListener listener) {
+        pongListeners.add(listener);
+    }
+    
     
     
 
@@ -112,6 +117,10 @@ public class WebsocketMessageProcessor implements Runnable, IMessageProcessor {
         try {
             message = messageQueue.take();
             logger.debug("Processor got message: " + message);
+            if( message.equalsIgnoreCase("Pong")) {
+                firePongReceived();
+                return;
+            }
             JsonElement element = parser.parse(message);
             if (element.isJsonObject()) {
                 JsonElement table = element.getAsJsonObject().get("table");
@@ -173,6 +182,18 @@ public class WebsocketMessageProcessor implements Runnable, IMessageProcessor {
         Type collectionType = type.getType();
         BitmexResponse response = gson.fromJson(message, collectionType);
         return response;
+    }
+    
+    protected void firePongReceived() {
+        synchronized(pongListeners) {
+            for( IPongListener listener : pongListeners ) {
+                try {
+                    listener.pongReceived();
+                } catch( Exception ex ) {
+                    logger.error(ex.getMessage(), ex);
+                }
+            }
+        }
     }
 
     protected void fireQuoteMessage(BitmexResponse<BitmexQuote> response) {

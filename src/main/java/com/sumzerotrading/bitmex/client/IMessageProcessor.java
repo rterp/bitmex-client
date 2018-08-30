@@ -7,6 +7,7 @@ package com.sumzerotrading.bitmex.client;
 
 import com.sumzerotrading.bitmex.listener.IExecutionListener;
 import com.sumzerotrading.bitmex.listener.IOrderListener;
+import com.sumzerotrading.bitmex.listener.IPongListener;
 import com.sumzerotrading.bitmex.listener.IPositionListener;
 import com.sumzerotrading.bitmex.listener.IQuoteListener;
 import com.sumzerotrading.bitmex.listener.ITradeListener;
@@ -34,5 +35,7 @@ public interface IMessageProcessor {
     void stopProcessor();
     
     int getQueueSize();
+    
+    void addPongListener(IPongListener listener);
     
 }
